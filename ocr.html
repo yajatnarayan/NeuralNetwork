@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OCR Demo</title>
+    <script src="ocr.js"></script>
+    <link rel="stylesheet" type="text/css" href="ocr.css">
+    <style>
+        /* Additional inline styles to ensure canvas visibility */
+        #canvas {
+            display: block;
+            margin: 0 auto;
+            border: 2px solid red; /* Make the border more visible for debugging */
+        }
+    </style>
+</head>
+<body onload="console.log('Body onload event fired'); ocrDemo.onLoadFunction();">
+    <div id="main-container" style="text-align: center;">
+        <h1>OCR Demo</h1>
+        <canvas id="canvas" width="200" height="200"></canvas>
+        <form name="input">
+            <p>Digit: <input id="digit" type="text"> </p>
+            <input type="button" value="Train" onclick="ocrDemo.train()">
+            <input type="button" value="Test" onclick="ocrDemo.test()">
+            <input type="button" value="Reset" onclick="ocrDemo.resetCanvas();"/>
+        </form> 
+    </div>
+    <script>
+        // Additional debugging
+        console.log("HTML loaded");
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded");
+            var canvas = document.getElementById('canvas');
+            if (canvas) {
+                console.log("Canvas found in DOMContentLoaded");
+            } else {
+                console.error("Canvas NOT found in DOMContentLoaded");
+            }
+        });
+    </script>
+</body>
+</html>
