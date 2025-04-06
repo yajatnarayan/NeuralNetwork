@@ -36,8 +36,8 @@ class OCRNeuralNetwork:
     def train(self, train_array):
         for data in train_array:
             # Forward propagation
-            y1 = np.dot(np.mat(self.theta1), np.mat(data['y0']).T)
-            sum1 = y1 + np.mat(self.input_layer_bias)  # Add the bias
+            y1 = np.dot(np.asmatrix(self.theta1), np.asmatrix(data['y0']).T)
+            sum1 = y1 + np.asmatrix(self.input_layer_bias)  # Add the bias
             y1 = self.sigmoid(sum1)
 
             y2 = np.dot(np.array(self.theta2), y1)
@@ -47,21 +47,21 @@ class OCRNeuralNetwork:
             # Back propagation
             actual_vals = [0] * self.NUM_DIGITS
             actual_vals[data['label']] = 1
-            output_errors = np.mat(actual_vals).T - np.mat(y2)
-            hidden_errors = np.multiply(np.dot(np.mat(self.theta2).T, output_errors), 
+            output_errors = np.asmatrix(actual_vals).T - np.asmatrix(y2)
+            hidden_errors = np.multiply(np.dot(np.asmatrix(self.theta2).T, output_errors), 
                                       self.sigmoid_prime(sum1))
 
             # Weight updates
-            self.theta1 += self.LEARNING_RATE * np.dot(np.mat(hidden_errors), 
-                                                     np.mat(data['y0']))
-            self.theta2 += self.LEARNING_RATE * np.dot(np.mat(output_errors), 
-                                                     np.mat(y1).T)
+            self.theta1 += self.LEARNING_RATE * np.dot(np.asmatrix(hidden_errors), 
+                                                     np.asmatrix(data['y0']))
+            self.theta2 += self.LEARNING_RATE * np.dot(np.asmatrix(output_errors), 
+                                                     np.asmatrix(y1).T)
             self.hidden_layer_bias += self.LEARNING_RATE * output_errors
             self.input_layer_bias += self.LEARNING_RATE * hidden_errors
 
     def predict(self, test):
-        y1 = np.dot(np.mat(self.theta1), np.mat(test).T)
-        y1 = y1 + np.mat(self.input_layer_bias)  # Add the bias
+        y1 = np.dot(np.asmatrix(self.theta1), np.asmatrix(test).T)
+        y1 = y1 + np.asmatrix(self.input_layer_bias)  # Add the bias
         y1 = self.sigmoid(y1)
 
         y2 = np.dot(np.array(self.theta2), y1)
