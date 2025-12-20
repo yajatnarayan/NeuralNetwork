@@ -3,83 +3,111 @@ import math
 import numpy as np
 import os
 
+
 class OCRNeuralNetwork:
+    """Simple 3-layer neural network for 20x20 pixel digit recognition.
+
+    Internal shapes:
+      - input layer size: 400 (20x20)
+      - hidden layer size: H (configurable)
+      - output layer size: 10
+
+    We store weights as numpy arrays with the following shapes:
+      - theta1: (H, 400)
+      - b1: (H, 1)
+      - theta2: (10, H)
+      - b2: (10, 1)
+    """
+
     LEARNING_RATE = 0.1
     NUM_DIGITS = 10
+    INPUT_SIZE = 400
     NN_FILE_PATH = 'nn.json'
 
-    def __init__(self, num_hidden_nodes, data_matrix, data_labels, train_indices, use_file=True):
+    def __init__(self, num_hidden_nodes, data_matrix=None, data_labels=None, train_indices=None, use_file=True):
         self._use_file = use_file
-        self.num_hidden_nodes = num_hidden_nodes
+        self.num_hidden_nodes = int(num_hidden_nodes)
 
         if use_file and os.path.exists(self.NN_FILE_PATH):
             self._load()
         else:
-            # Initialize weights to small random values
-            self.theta1 = self._rand_initialize_weights(400, num_hidden_nodes)
-            self.theta2 = self._rand_initialize_weights(num_hidden_nodes, self.NUM_DIGITS)
-            self.input_layer_bias = self._rand_initialize_weights(1, num_hidden_nodes)
-            self.hidden_layer_bias = self._rand_initialize_weights(1, self.NUM_DIGITS)
+            # Initialize weights to small random values in correct shapes
+            self.theta1 = (np.random.rand(self.num_hidden_nodes, self.INPUT_SIZE) * 0.12) - 0.06
+            self.theta2 = (np.random.rand(self.NUM_DIGITS, self.num_hidden_nodes) * 0.12) - 0.06
+            self.b1 = np.zeros((self.num_hidden_nodes, 1))
+            self.b2 = np.zeros((self.NUM_DIGITS, 1))
 
-    def _rand_initialize_weights(self, size_in, size_out):
-        return [((x * 0.12) - 0.06) for x in np.random.rand(size_out, size_in)]
+    def _sigmoid(self, z):
+        return 1.0 / (1.0 + np.exp(-z))
 
-    def _sigmoid_scalar(self, z):
-        return 1 / (1 + math.e ** -z)
-
-    def sigmoid(self, z):
-        return np.vectorize(self._sigmoid_scalar)(z)
-
-    def sigmoid_prime(self, z):
-        return np.multiply(self.sigmoid(z), (1 - self.sigmoid(z)))
+    def _sigmoid_prime(self, z):
+        s = self._sigmoid(z)
+        return s * (1 - s)
 
     def train(self, train_array):
+        """Train on a list of samples. Each item should be a dict with keys:
+           - 'y0': list/array of length 400 (input features)
+           - 'label': integer 0-9
+        Updates weights in-place using simple per-sample gradient descent.
+        """
         for data in train_array:
-            # Forward propagation
-            y1 = np.dot(np.asmatrix(self.theta1), np.asmatrix(data['y0']).T)
-            sum1 = y1 + np.asmatrix(self.input_layer_bias)  # Add the bias
-            y1 = self.sigmoid(sum1)
+            x = np.array(data['y0'], dtype=float).reshape((self.INPUT_SIZE, 1))
 
-            y2 = np.dot(np.array(self.theta2), y1)
-            y2 = np.add(y2, self.hidden_layer_bias)  # Add the bias
-            y2 = self.sigmoid(y2)
+            # Forward pass
+            z1 = self.theta1.dot(x) + self.b1
+            a1 = self._sigmoid(z1)
 
-            # Back propagation
-            actual_vals = [0] * self.NUM_DIGITS
-            actual_vals[data['label']] = 1
-            output_errors = np.asmatrix(actual_vals).T - np.asmatrix(y2)
-            hidden_errors = np.multiply(np.dot(np.asmatrix(self.theta2).T, output_errors), 
-                                      self.sigmoid_prime(sum1))
+            z2 = self.theta2.dot(a1) + self.b2
+            a2 = self._sigmoid(z2)
 
-            # Weight updates
-            self.theta1 += self.LEARNING_RATE * np.dot(np.asmatrix(hidden_errors), 
-                                                     np.asmatrix(data['y0']))
-            self.theta2 += self.LEARNING_RATE * np.dot(np.asmatrix(output_errors), 
-                                                     np.asmatrix(y1).T)
-            self.hidden_layer_bias += self.LEARNING_RATE * output_errors
-            self.input_layer_bias += self.LEARNING_RATE * hidden_errors
+            # Prepare target
+            y = np.zeros((self.NUM_DIGITS, 1))
+            lbl = int(data['label'])
+            y[lbl, 0] = 1.0
 
-    def predict(self, test):
-        y1 = np.dot(np.asmatrix(self.theta1), np.asmatrix(test).T)
-        y1 = y1 + np.asmatrix(self.input_layer_bias)  # Add the bias
-        y1 = self.sigmoid(y1)
+            # Backprop
+            delta2 = a2 - y  # (10,1)
+            delta1 = self.theta2.T.dot(delta2) * self._sigmoid_prime(z1)  # (H,1)
 
-        y2 = np.dot(np.array(self.theta2), y1)
-        y2 = np.add(y2, self.hidden_layer_bias)  # Add the bias
-        y2 = self.sigmoid(y2)
+            # Gradient descent parameter update (simple online update)
+            self.theta2 -= self.LEARNING_RATE * (delta2.dot(a1.T))
+            self.b2 -= self.LEARNING_RATE * delta2
 
-        results = y2.T.tolist()[0]
-        return results.index(max(results))
+            self.theta1 -= self.LEARNING_RATE * (delta1.dot(x.T))
+            self.b1 -= self.LEARNING_RATE * delta1
+
+    def predict(self, test, return_activations=False):
+        """Predict the digit for a given test input (list or array of length 400).
+        Returns the integer digit with highest output activation.
+        If return_activations=True, returns a dict with prediction and all layer activations.
+        """
+        x = np.array(test, dtype=float).reshape((self.INPUT_SIZE, 1))
+        z1 = self.theta1.dot(x) + self.b1
+        a1 = self._sigmoid(z1)
+        z2 = self.theta2.dot(a1) + self.b2
+        a2 = self._sigmoid(z2)
+
+        prediction = int(np.argmax(a2))
+
+        if return_activations:
+            return {
+                'prediction': prediction,
+                'input_vector': x.flatten().tolist(),
+                'hidden_activations': a1.flatten().tolist(),
+                'output_activations': a2.flatten().tolist()
+            }
+
+        return prediction
 
     def save(self):
         if not self._use_file:
             return
 
         json_neural_network = {
-            "theta1": [np_mat.tolist()[0] for np_mat in self.theta1],
-            "theta2": [np_mat.tolist()[0] for np_mat in self.theta2],
-            "b1": self.input_layer_bias[0].tolist()[0],
-            "b2": self.hidden_layer_bias[0].tolist()[0]
+            'theta1': self.theta1.tolist(),
+            'theta2': self.theta2.tolist(),
+            'b1': self.b1.tolist(),
+            'b2': self.b2.tolist()
         }
         with open(self.NN_FILE_PATH, 'w') as nnFile:
             json.dump(json_neural_network, nnFile)
@@ -90,7 +118,7 @@ class OCRNeuralNetwork:
 
         with open(self.NN_FILE_PATH) as nnFile:
             nn = json.load(nnFile)
-        self.theta1 = [np.array(li) for li in nn['theta1']]
-        self.theta2 = [np.array(li) for li in nn['theta2']]
-        self.input_layer_bias = [np.array(nn['b1'][0])]
-        self.hidden_layer_bias = [np.array(nn['b2'][0])] 
+        self.theta1 = np.array(nn['theta1'], dtype=float)
+        self.theta2 = np.array(nn['theta2'], dtype=float)
+        self.b1 = np.array(nn['b1'], dtype=float)
+        self.b2 = np.array(nn['b2'], dtype=float)

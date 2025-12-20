@@ -17,13 +17,51 @@
 <body onload="console.log('Body onload event fired'); ocrDemo.onLoadFunction();">
     <div id="main-container" style="text-align: center;">
         <h1>OCR Demo</h1>
-        <canvas id="canvas" width="200" height="200"></canvas>
-        <form name="input">
-            <p>Digit: <input id="digit" type="text"> </p>
-            <input type="button" value="Train" onclick="ocrDemo.train()">
-            <input type="button" value="Test" onclick="ocrDemo.test()">
-            <input type="button" value="Reset" onclick="ocrDemo.resetCanvas();"/>
-        </form> 
+        <div style="display: flex; flex-direction: column; gap: 20px; max-width: 1400px; margin: 0 auto;">
+            <!-- Top Row: Input and Controls -->
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div style="flex: 0 0 auto;">
+                    <h3>Drawing Canvas (20×20)</h3>
+                    <canvas id="canvas" width="200" height="200"></canvas>
+                    <form name="input">
+                        <p>Digit: <input id="digit" type="text" size="5"> </p>
+                        <input type="button" value="Train" onclick="ocrDemo.train()">
+                        <input type="button" value="Test" onclick="ocrDemo.test()">
+                        <input type="button" value="Reset" onclick="ocrDemo.resetCanvas();"/>
+                    </form>
+                </div>
+
+                <!-- Input Vector Heatmap -->
+                <div style="flex: 0 0 auto;">
+                    <h3>Input Vector (400 dims)</h3>
+                    <canvas id="input-heatmap" width="200" height="200" style="border: 1px solid #ccc;"></canvas>
+                    <div style="font-size: 11px; margin-top: 5px;">Normalized 20×20 grid</div>
+                </div>
+
+                <!-- Output Confidence -->
+                <div style="flex: 1;">
+                    <h3>Prediction Confidence</h3>
+                    <svg id="confidence-chart" width="350" height="220" style="border: 1px solid #ccc; background: #f9f9f9;">
+                        <text x="175" y="110" text-anchor="middle" fill="#999">Draw and test a digit to see confidence</text>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Network Visualization -->
+            <div>
+                <h3>Neural Network Architecture (Input → Hidden → Output)</h3>
+                <svg id="network-viz" width="100%" height="400" style="border: 1px solid #ccc; background: #f9f9f9; display: block;">
+                    <text x="50%" y="50%" text-anchor="middle" fill="#999">Loading network visualization...</text>
+                </svg>
+                <div style="margin-top: 10px; font-size: 12px;">
+                    <span style="color: #00aa00; font-weight: bold;">●</span> Positive weights |
+                    <span style="color: #aa0000; font-weight: bold;">●</span> Negative weights |
+                    <span style="color: #4A90E2; font-weight: bold;">●</span> Input layer |
+                    <span style="color: #50C878; font-weight: bold;">●</span> Hidden layer |
+                    <span style="color: #E94B3C; font-weight: bold;">●</span> Output layer
+                </div>
+            </div>
+        </div>
     </div>
     <script>
         // Additional debugging

@@ -48,16 +48,40 @@ class OCRRequestHandler(http.server.SimpleHTTPRequestHandler):
             print("Training request received")
             nn.train(payload['trainArray'])
             nn.save()
+            # Return updated weights for visualization
+            response = {
+                "type": "train",
+                "weights": {
+                    "theta1": nn.theta1.tolist(),
+                    "theta2": nn.theta2.tolist()
+                }
+            }
         elif payload.get('predict'):
             try:
                 print("Prediction request received")
+                # Expect payload['image'] to be a list/array of 400 values
+                activations_data = nn.predict(payload['image'], return_activations=True)
                 response = {
-                    "type": "test", 
-                    "result": nn.predict(str(payload['image']))
+                    "type": "test",
+                    "result": activations_data['prediction'],
+                    "activations": {
+                        "input": activations_data['input_vector'],
+                        "hidden": activations_data['hidden_activations'],
+                        "output": activations_data['output_activations']
+                    }
                 }
             except Exception as e:
                 print(f"Error during prediction: {e}")
                 response_code = 500
+        elif payload.get('getWeights'):
+            print("Get weights request received")
+            # Return current network weights
+            response = {
+                "type": "weights",
+                "theta1": nn.theta1.tolist(),
+                "theta2": nn.theta2.tolist(),
+                "hiddenNodes": nn.num_hidden_nodes
+            }
         else:
             print("Invalid request received")
             response_code = 400
@@ -71,11 +95,17 @@ class OCRRequestHandler(http.server.SimpleHTTPRequestHandler):
         return
 
 if __name__ == "__main__":
-    PORT = 5000
+    PORT = 8000
     print(f"Starting server on port {PORT}")
     print(f"Current directory: {os.getcwd()}")
     print(f"Files in current directory: {os.listdir('.')}")
-    
+    # Allow immediate reuse of the address to avoid "Address already in use"
+    socketserver.TCPServer.allow_reuse_address = True
+
     with socketserver.TCPServer(("", PORT), OCRRequestHandler) as httpd:
         print(f"Server running at http://localhost:{PORT}")
-        httpd.serve_forever()
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("Shutting down server")
+            httpd.server_close()
