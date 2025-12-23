@@ -1,80 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OCR Demo</title>
-    <script src="ocr.js"></script>
-    <link rel="stylesheet" type="text/css" href="ocr.css">
-    <style>
-        /* Additional inline styles to ensure canvas visibility */
-        #canvas {
-            display: block;
-            margin: 0 auto;
-            border: 2px solid red; /* Make the border more visible for debugging */
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network OCR</title>
+    <link rel="stylesheet" href="ocr.css">
 </head>
-<body onload="console.log('Body onload event fired'); ocrDemo.onLoadFunction();">
-    <div id="main-container" style="text-align: center;">
-        <h1>OCR Demo</h1>
-        <div style="display: flex; flex-direction: column; gap: 20px; max-width: 1400px; margin: 0 auto;">
-            <!-- Top Row: Input and Controls -->
-            <div style="display: flex; gap: 20px; align-items: flex-start;">
-                <div style="flex: 0 0 auto;">
-                    <h3>Drawing Canvas (20×20)</h3>
-                    <canvas id="canvas" width="200" height="200"></canvas>
-                    <form name="input">
-                        <p>Digit: <input id="digit" type="text" size="5"> </p>
-                        <input type="button" value="Train" onclick="ocrDemo.train()">
-                        <input type="button" value="Test" onclick="ocrDemo.test()">
-                        <input type="button" value="Reset" onclick="ocrDemo.resetCanvas();"/>
-                    </form>
-                </div>
+<body>
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
 
-                <!-- Input Vector Heatmap -->
-                <div style="flex: 0 0 auto;">
-                    <h3>Input Vector (400 dims)</h3>
-                    <canvas id="input-heatmap" width="200" height="200" style="border: 1px solid #ccc;"></canvas>
-                    <div style="font-size: 11px; margin-top: 5px;">Normalized 20×20 grid</div>
-                </div>
-
-                <!-- Output Confidence -->
-                <div style="flex: 1;">
-                    <h3>Prediction Confidence</h3>
-                    <svg id="confidence-chart" width="350" height="220" style="border: 1px solid #ccc; background: #f9f9f9;">
-                        <text x="175" y="110" text-anchor="middle" fill="#999">Draw and test a digit to see confidence</text>
-                    </svg>
-                </div>
+    <!-- Main Application -->
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="title-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                        </svg>
+                    </span>
+                    Neural OCR
+                </h1>
+                <p class="subtitle">Draw a digit and let the neural network recognize it</p>
             </div>
+        </header>
 
-            <!-- Bottom Row: Network Visualization -->
-            <div>
-                <h3>Neural Network Architecture (Input → Hidden → Output)</h3>
-                <svg id="network-viz" width="100%" height="400" style="border: 1px solid #ccc; background: #f9f9f9; display: block;">
-                    <text x="50%" y="50%" text-anchor="middle" fill="#999">Loading network visualization...</text>
-                </svg>
-                <div style="margin-top: 10px; font-size: 12px;">
-                    <span style="color: #00aa00; font-weight: bold;">●</span> Positive weights |
-                    <span style="color: #aa0000; font-weight: bold;">●</span> Negative weights |
-                    <span style="color: #4A90E2; font-weight: bold;">●</span> Input layer |
-                    <span style="color: #50C878; font-weight: bold;">●</span> Hidden layer |
-                    <span style="color: #E94B3C; font-weight: bold;">●</span> Output layer
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Section: Drawing + Results -->
+            <section class="top-section">
+                <!-- Drawing Panel -->
+                <div class="card drawing-panel">
+                    <div class="card-header">
+                        <h2>Draw a Digit</h2>
+                        <span class="badge">20 x 20</span>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <canvas id="canvas" width="280" height="280"></canvas>
+                        <div class="canvas-overlay" id="canvas-overlay">
+                            <span>Draw here</span>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <div class="control-group">
+                            <label for="digit" class="control-label">Training Label</label>
+                            <input type="text" id="digit" class="input-field" placeholder="0-9" maxlength="1" pattern="[0-9]">
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" id="train-btn" onclick="ocrDemo.train()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                                Train
+                            </button>
+                            <button class="btn btn-success" id="test-btn" onclick="ocrDemo.test()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="M21 21l-4.35-4.35"/>
+                                </svg>
+                                Recognize
+                            </button>
+                            <button class="btn btn-secondary" onclick="ocrDemo.resetCanvas()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                    <path d="M3 3v5h5"/>
+                                </svg>
+                                Clear
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <!-- Input Visualization -->
+                <div class="card input-panel">
+                    <div class="card-header">
+                        <h2>Input Vector</h2>
+                        <span class="badge">Centered</span>
+                    </div>
+                    <div class="heatmap-wrapper">
+                        <canvas id="input-heatmap" width="200" height="200"></canvas>
+                    </div>
+                    <p class="card-footer-text">Auto-centered 20x20 grid</p>
+                </div>
+
+                <!-- Prediction Results -->
+                <div class="card prediction-panel">
+                    <div class="card-header">
+                        <h2>Prediction</h2>
+                        <span class="badge" id="status-badge">Ready</span>
+                    </div>
+                    <div class="prediction-display">
+                        <div class="prediction-number" id="prediction-result">?</div>
+                        <div class="prediction-confidence" id="prediction-confidence">Draw a digit to see prediction</div>
+                    </div>
+
+                    <!-- Feedback Panel - Hidden until prediction is made -->
+                    <div class="feedback-panel hidden" id="feedback-panel">
+                        <p class="feedback-prompt">Was this correct?</p>
+                        <div class="feedback-buttons">
+                            <button class="btn btn-confirm" id="confirm-btn" onclick="ocrDemo.confirmPrediction()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                Correct
+                            </button>
+                            <button class="btn btn-correct" id="correct-btn" onclick="ocrDemo.showCorrectionInput()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                Wrong
+                            </button>
+                        </div>
+                        <div class="correction-input hidden" id="correction-input">
+                            <label>Correct digit:</label>
+                            <div class="digit-selector">
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(0)">0</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(1)">1</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(2)">2</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(3)">3</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(4)">4</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(5)">5</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(6)">6</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(7)">7</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(8)">8</button>
+                                <button class="digit-btn" onclick="ocrDemo.correctPrediction(9)">9</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="confidence-chart-wrapper">
+                        <svg id="confidence-chart" width="100%" height="180" preserveAspectRatio="xMidYMid meet"></svg>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Network Visualization Section -->
+            <section class="network-section">
+                <div class="card network-panel">
+                    <div class="card-header">
+                        <h2>Network Architecture</h2>
+                        <div class="legend">
+                            <span class="legend-item"><span class="dot positive"></span> Positive</span>
+                            <span class="legend-item"><span class="dot negative"></span> Negative</span>
+                            <span class="legend-item"><span class="dot input-layer"></span> Input</span>
+                            <span class="legend-item"><span class="dot hidden-layer"></span> Hidden</span>
+                            <span class="legend-item"><span class="dot output-layer"></span> Output</span>
+                        </div>
+                    </div>
+                    <div class="network-viz-wrapper">
+                        <svg id="network-viz" preserveAspectRatio="xMidYMid meet">
+                            <text x="50%" y="50%" text-anchor="middle" fill="#6b7280" class="loading-text">Loading network...</text>
+                        </svg>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>3-layer neural network: 400 input neurons, <span id="hidden-count">15</span> hidden neurons, 10 output neurons</p>
+        </footer>
     </div>
-    <script>
-        // Additional debugging
-        console.log("HTML loaded");
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM fully loaded");
-            var canvas = document.getElementById('canvas');
-            if (canvas) {
-                console.log("Canvas found in DOMContentLoaded");
-            } else {
-                console.error("Canvas NOT found in DOMContentLoaded");
-            }
-        });
-    </script>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <span id="loading-text">Processing...</span>
+    </div>
+
+    <script src="ocr.js"></script>
 </body>
 </html>

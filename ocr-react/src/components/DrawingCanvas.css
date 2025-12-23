@@ -1,0 +1,53 @@
+.drawing-canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.drawing-canvas {
+  border: 2px solid #333;
+  display: block;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.button-group button {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button-group button:first-child {
+  background: #4CAF50;
+  color: white;
+}
+
+.button-group button:nth-child(2) {
+  background: #2196F3;
+  color: white;
+}
+
+.button-group button:last-child {
+  background: #f44336;
+  color: white;
+}
+
+.button-group button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.button-group button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
