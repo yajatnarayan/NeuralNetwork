@@ -3,6 +3,7 @@ import DrawingCanvas from './components/DrawingCanvas'
 import InputHeatmap from './components/InputHeatmap'
 import ConfidenceChart from './components/ConfidenceChart'
 import NetworkVisualization from './components/NetworkVisualization'
+import MetricsPanel from './components/MetricsPanel'
 import { trainNetwork, testNetwork, getWeights } from './api/client'
 import './App.css'
 
@@ -155,6 +156,14 @@ function App() {
                 <span className="dot output"></span> Output layer
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Metrics Section */}
+        <div className="metrics-row">
+          <div className="card full-width">
+            <h3>Model Metrics</h3>
+            <MetricsPanel />
           </div>
         </div>
       </div>

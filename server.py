@@ -2,10 +2,15 @@ import json
 import http.server
 import socketserver
 import os
+import time
 from ocr import OCRNeuralNetwork
+from metrics import metrics
 
 # Initialize the OCR neural network
 nn = OCRNeuralNetwork(15, None, None, None, True)
+
+# Take initial weight snapshot
+metrics.snapshot_weights(nn.theta1, nn.theta2)
 
 
 class OCRRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -154,6 +159,38 @@ class OCRRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "theta1": nn.theta1.tolist(),
                     "theta2": nn.theta2.tolist(),
                     "hiddenNodes": nn.num_hidden_nodes
+                }
+
+            # Handle get metrics request
+            elif payload.get('getMetrics'):
+                print("Returning metrics")
+                response = {
+                    "type": "metrics",
+                    "summary": metrics.get_summary(),
+                    "architecture": metrics.get_network_architecture(nn)
+                }
+
+            # Handle MNIST evaluation request
+            elif payload.get('evaluateMnist'):
+                sample_size = payload.get('sampleSize', 1000)
+                print(f"Running MNIST evaluation with {sample_size} samples...")
+                start_time = time.time()
+                mnist_result = metrics.evaluate_mnist(nn, sample_size)
+                duration = (time.time() - start_time) * 1000
+                print(f"MNIST evaluation completed in {duration:.0f}ms")
+                response = {
+                    "type": "mnist_evaluation",
+                    "result": mnist_result,
+                    "architecture": metrics.get_network_architecture(nn),
+                    "duration_ms": round(duration, 2)
+                }
+
+            # Handle get architecture request
+            elif payload.get('getArchitecture'):
+                print("Returning network architecture")
+                response = {
+                    "type": "architecture",
+                    "architecture": metrics.get_network_architecture(nn)
                 }
 
             else:

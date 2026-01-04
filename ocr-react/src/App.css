@@ -145,8 +145,247 @@ header h1 {
   100% { transform: rotate(360deg); }
 }
 
+/* Metrics Panel Styles */
+.metrics-row {
+  margin-top: 1.5rem;
+}
+
+.metrics-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.metrics-section {
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.metrics-section h4 {
+  margin-bottom: 1rem;
+  color: #333;
+  font-size: 1rem;
+  border-bottom: 2px solid #4CAF50;
+  padding-bottom: 0.5rem;
+}
+
+.metrics-section h5 {
+  margin: 1rem 0 0.5rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* Architecture Diagram */
+.arch-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.layer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  min-width: 80px;
+}
+
+.input-layer { background: #e3f2fd; border: 2px solid #2196F3; }
+.hidden-layer { background: #e8f5e9; border: 2px solid #4CAF50; }
+.output-layer { background: #ffebee; border: 2px solid #f44336; }
+
+.layer-size {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.layer-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.layer-arrow {
+  font-size: 1.5rem;
+  color: #999;
+}
+
+/* Parameters Table */
+.params-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.params-table th,
+.params-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.params-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #555;
+}
+
+.params-table .total-row {
+  background: #e8f5e9;
+}
+
+.params-table .total-row td {
+  border-top: 2px solid #4CAF50;
+}
+
+/* MNIST Controls */
+.mnist-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.mnist-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.mnist-controls select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.evaluate-btn {
+  padding: 0.5rem 1rem;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.evaluate-btn:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.evaluate-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* MNIST Results */
+.mnist-results {
+  margin-top: 1rem;
+}
+
+.accuracy-display {
+  text-align: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  border-radius: 8px;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.accuracy-value {
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.accuracy-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-top: 0.5rem;
+}
+
+/* Per-Digit Accuracy Bars */
+.per-digit-accuracy {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.digit-bars {
+  display: flex;
+  gap: 0.5rem;
+  height: 120px;
+  align-items: flex-end;
+  padding-top: 1rem;
+}
+
+.digit-bar-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.digit-bar {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+}
+
+.digit-label {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #333;
+  margin-top: 0.5rem;
+}
+
+.digit-acc {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+/* Helper Text */
+.loading-text,
+.hint-text {
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.error-text {
+  color: #f44336;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
 @media (max-width: 768px) {
   .top-row {
     grid-template-columns: 1fr;
+  }
+
+  .metrics-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .mnist-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .arch-diagram {
+    flex-wrap: wrap;
   }
 }

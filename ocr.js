@@ -1381,10 +1381,131 @@ var ocrDemo = {
             g: parseInt(result[2], 16),
             b: parseInt(result[3], 16)
         } : { r: 128, g: 128, b: 128 };
+    },
+
+    // ============================================
+    // METRICS FUNCTIONS
+    // ============================================
+
+    loadArchitecture: function() {
+        var self = this;
+        fetch('/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ getArchitecture: true })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            self.displayArchitecture(data.architecture);
+        })
+        .catch(function(error) {
+            console.error('[OCR] Error loading architecture:', error);
+        });
+    },
+
+    displayArchitecture: function(arch) {
+        // Update layer sizes
+        document.getElementById('input-size').textContent = arch.architecture.input_layer.size;
+        document.getElementById('hidden-size').textContent = arch.architecture.hidden_layer.size;
+        document.getElementById('output-size').textContent = arch.architecture.output_layer.size;
+
+        // Update parameters table
+        var tbody = document.getElementById('params-tbody');
+        var params = arch.parameters;
+
+        tbody.innerHTML = '<tr>' +
+            '<td>Theta1 (Input&rarr;Hidden)</td>' +
+            '<td>' + params.theta1.shape.join(' x ') + '</td>' +
+            '<td>' + params.theta1.count.toLocaleString() + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Bias1 (Hidden)</td>' +
+            '<td>' + params.b1.shape.join(' x ') + '</td>' +
+            '<td>' + params.b1.count.toLocaleString() + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Theta2 (Hidden&rarr;Output)</td>' +
+            '<td>' + params.theta2.shape.join(' x ') + '</td>' +
+            '<td>' + params.theta2.count.toLocaleString() + '</td>' +
+            '</tr>' +
+            '<tr>' +
+            '<td>Bias2 (Output)</td>' +
+            '<td>' + params.b2.shape.join(' x ') + '</td>' +
+            '<td>' + params.b2.count.toLocaleString() + '</td>' +
+            '</tr>' +
+            '<tr class="total-row">' +
+            '<td colspan="2"><strong>Total Parameters</strong></td>' +
+            '<td><strong>' + params.total.toLocaleString() + '</strong></td>' +
+            '</tr>';
+    },
+
+    evaluateMnist: function() {
+        var self = this;
+        var sampleSize = parseInt(document.getElementById('mnist-sample-size').value);
+        var btn = document.getElementById('eval-mnist-btn');
+        var hint = document.getElementById('mnist-hint');
+
+        btn.disabled = true;
+        btn.textContent = 'Evaluating...';
+        this.showLoading('Running MNIST evaluation...');
+
+        fetch('/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                evaluateMnist: true,
+                sampleSize: sampleSize
+            })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            self.hideLoading();
+            btn.disabled = false;
+            btn.textContent = 'Run MNIST Evaluation';
+            hint.classList.add('hidden');
+            self.displayMnistResults(data.result);
+            self.showToast('MNIST evaluation complete: ' + data.result.accuracy_percent + '% accuracy', 'success');
+        })
+        .catch(function(error) {
+            self.hideLoading();
+            btn.disabled = false;
+            btn.textContent = 'Run MNIST Evaluation';
+            console.error('[OCR] MNIST evaluation error:', error);
+            self.showToast('MNIST evaluation failed', 'error');
+        });
+    },
+
+    displayMnistResults: function(result) {
+        var resultsDiv = document.getElementById('mnist-results');
+        resultsDiv.classList.remove('hidden');
+
+        // Update accuracy display
+        document.getElementById('mnist-accuracy').textContent = result.accuracy_percent + '%';
+        document.getElementById('mnist-accuracy-label').textContent =
+            'Accuracy (' + result.correct + ' / ' + result.sample_size + ' correct)';
+
+        // Create per-digit bars
+        var barsContainer = document.getElementById('digit-bars');
+        barsContainer.innerHTML = '';
+
+        for (var digit = 0; digit < 10; digit++) {
+            var acc = result.per_digit_accuracy[digit.toString()];
+            var accPercent = acc !== null ? (acc * 100) : 0;
+            var color = acc >= 0.8 ? '#4ade80' : (acc >= 0.5 ? '#fbbf24' : '#f87171');
+
+            var item = document.createElement('div');
+            item.className = 'digit-bar-item';
+            item.innerHTML =
+                '<div class="digit-bar" style="height: ' + accPercent + '%; background-color: ' + color + ';"></div>' +
+                '<span class="digit-bar-label">' + digit + '</span>' +
+                '<span class="digit-bar-acc">' + (acc !== null ? accPercent.toFixed(0) + '%' : '-') + '</span>';
+            barsContainer.appendChild(item);
+        }
     }
 };
 
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', function() {
     ocrDemo.onLoadFunction();
+    ocrDemo.loadArchitecture();
 });

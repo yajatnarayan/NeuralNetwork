@@ -159,6 +159,81 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Metrics Section -->
+            <section class="metrics-section">
+                <div class="card metrics-panel">
+                    <div class="card-header">
+                        <h2>Model Metrics</h2>
+                    </div>
+                    <div class="metrics-content">
+                        <!-- Architecture Info -->
+                        <div class="metric-card">
+                            <h3>Network Architecture</h3>
+                            <div class="arch-diagram" id="arch-diagram">
+                                <div class="layer-box input">
+                                    <span class="layer-size" id="input-size">400</span>
+                                    <span class="layer-name">Input</span>
+                                </div>
+                                <span class="arrow">&rarr;</span>
+                                <div class="layer-box hidden">
+                                    <span class="layer-size" id="hidden-size">15</span>
+                                    <span class="layer-name">Hidden</span>
+                                </div>
+                                <span class="arrow">&rarr;</span>
+                                <div class="layer-box output">
+                                    <span class="layer-size" id="output-size">10</span>
+                                    <span class="layer-name">Output</span>
+                                </div>
+                            </div>
+                            <table class="params-table" id="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Layer</th>
+                                        <th>Shape</th>
+                                        <th>Parameters</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="params-tbody">
+                                    <tr><td colspan="3" class="loading">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- MNIST Evaluation -->
+                        <div class="metric-card">
+                            <h3>MNIST Test Accuracy</h3>
+                            <div class="mnist-controls">
+                                <label>
+                                    Sample Size:
+                                    <select id="mnist-sample-size">
+                                        <option value="100">100 (fast)</option>
+                                        <option value="500">500</option>
+                                        <option value="1000" selected>1,000</option>
+                                        <option value="2000">2,000</option>
+                                        <option value="5000">5,000</option>
+                                        <option value="10000">10,000 (full)</option>
+                                    </select>
+                                </label>
+                                <button class="btn btn-primary" id="eval-mnist-btn" onclick="ocrDemo.evaluateMnist()">
+                                    Run MNIST Evaluation
+                                </button>
+                            </div>
+                            <div id="mnist-results" class="mnist-results hidden">
+                                <div class="accuracy-display">
+                                    <span class="accuracy-value" id="mnist-accuracy">-</span>
+                                    <span class="accuracy-label" id="mnist-accuracy-label">Accuracy</span>
+                                </div>
+                                <div class="per-digit-chart">
+                                    <h4>Per-Digit Accuracy</h4>
+                                    <div class="digit-bars" id="digit-bars"></div>
+                                </div>
+                            </div>
+                            <p class="hint-text" id="mnist-hint">Click "Run MNIST Evaluation" to test the model</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- Footer -->
