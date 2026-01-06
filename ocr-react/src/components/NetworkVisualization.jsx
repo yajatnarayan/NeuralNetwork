@@ -5,11 +5,47 @@ const SVG_HEIGHT = 400
 const NODE_RADIUS = 5
 const THRESHOLD = 0.15
 
+console.log('[NetworkVisualization] Module loaded with config:', { SVG_HEIGHT, NODE_RADIUS, THRESHOLD })
+
 function NetworkVisualization({ weights, activations }) {
+  console.log('[NetworkVisualization] Rendering with:', {
+    hasWeights: !!weights,
+    theta1Shape: weights?.theta1 ? `[${weights.theta1.length}x${weights.theta1[0]?.length}]` : 'none',
+    theta2Shape: weights?.theta2 ? `[${weights.theta2.length}x${weights.theta2[0]?.length}]` : 'none',
+    hiddenNodes: weights?.hiddenNodes,
+    hasActivations: !!activations,
+    activationKeys: activations ? Object.keys(activations) : []
+  })
+
   const visualization = useMemo(() => {
-    if (!weights) return null
+    console.log('[NetworkVisualization] useMemo recalculating visualization')
+    if (!weights) {
+      console.log('[NetworkVisualization] No weights, returning null')
+      return null
+    }
 
     const { theta1, theta2, hiddenNodes } = weights
+
+    // Validate weights structure
+    if (!theta1 || !theta2 || !Array.isArray(theta1) || !Array.isArray(theta2)) {
+      console.error('[NetworkVisualization] Invalid weights structure:', { theta1: typeof theta1, theta2: typeof theta2 })
+      return null
+    }
+
+    // Use actual array lengths for safety
+    const actualHiddenNodes = theta1.length
+    const actualOutputNodes = theta2.length
+
+    console.log('[NetworkVisualization] Weight dimensions:', {
+      theta1Rows: theta1.length,
+      theta1Cols: theta1[0]?.length,
+      theta2Rows: theta2.length,
+      theta2Cols: theta2[0]?.length,
+      declaredHiddenNodes: hiddenNodes,
+      actualHiddenNodes,
+      actualOutputNodes
+    })
+
     const width = 1200
     const height = SVG_HEIGHT
 
@@ -27,52 +63,68 @@ function NetworkVisualization({ weights, activations }) {
     }
 
     const inputPos = calculatePositions(16, height, inputX)
-    const hiddenPos = calculatePositions(hiddenNodes, height, hiddenX)
-    const outputPos = calculatePositions(10, height, outputX)
+    const hiddenPos = calculatePositions(actualHiddenNodes, height, hiddenX)
+    const outputPos = calculatePositions(actualOutputNodes, height, outputX)
 
     // Calculate connections
     const connections = []
 
-    // Input to Hidden
+    // Input to Hidden - with bounds checking
     const maxWeight1 = Math.max(...theta1.flat().map(Math.abs))
-    theta1.forEach((hiddenWeights, hi) => {
-      inputSampleIndices.forEach((inputIdx, ii) => {
-        const weight = hiddenWeights[inputIdx]
-        const norm = weight / maxWeight1
-
-        if (Math.abs(norm) > THRESHOLD) {
-          connections.push({
-            x1: inputPos[ii].x,
-            y1: inputPos[ii].y,
-            x2: hiddenPos[hi].x,
-            y2: hiddenPos[hi].y,
-            color: weight > 0 ? '#00aa00' : '#cc0000',
-            opacity: Math.abs(norm) * 0.6,
-            width: Math.abs(norm) * 2 + 0.5
-          })
+    if (maxWeight1 > 0) {
+      theta1.forEach((hiddenWeights, hi) => {
+        if (!hiddenPos[hi]) {
+          console.warn('[NetworkVisualization] Missing hiddenPos for index:', hi)
+          return
         }
-      })
-    })
+        inputSampleIndices.forEach((inputIdx, ii) => {
+          if (!inputPos[ii] || !hiddenWeights) return
 
-    // Hidden to Output
+          const weight = hiddenWeights[inputIdx]
+          if (weight === undefined) return
+
+          const norm = weight / maxWeight1
+
+          if (Math.abs(norm) > THRESHOLD) {
+            connections.push({
+              x1: inputPos[ii].x,
+              y1: inputPos[ii].y,
+              x2: hiddenPos[hi].x,
+              y2: hiddenPos[hi].y,
+              color: weight > 0 ? '#00aa00' : '#cc0000',
+              opacity: Math.abs(norm) * 0.6,
+              width: Math.abs(norm) * 2 + 0.5
+            })
+          }
+        })
+      })
+    }
+
+    // Hidden to Output - with bounds checking
     const maxWeight2 = Math.max(...theta2.flat().map(Math.abs))
-    theta2.forEach((outputWeights, oi) => {
-      outputWeights.forEach((weight, hi) => {
-        const norm = weight / maxWeight2
+    if (maxWeight2 > 0) {
+      theta2.forEach((outputWeights, oi) => {
+        if (!outputPos[oi] || !outputWeights) return
 
-        if (Math.abs(norm) > THRESHOLD) {
-          connections.push({
-            x1: hiddenPos[hi].x,
-            y1: hiddenPos[hi].y,
-            x2: outputPos[oi].x,
-            y2: outputPos[oi].y,
-            color: weight > 0 ? '#00aa00' : '#cc0000',
-            opacity: Math.abs(norm) * 0.6,
-            width: Math.abs(norm) * 2 + 0.5
-          })
-        }
+        outputWeights.forEach((weight, hi) => {
+          if (!hiddenPos[hi] || weight === undefined) return
+
+          const norm = weight / maxWeight2
+
+          if (Math.abs(norm) > THRESHOLD) {
+            connections.push({
+              x1: hiddenPos[hi].x,
+              y1: hiddenPos[hi].y,
+              x2: outputPos[oi].x,
+              y2: outputPos[oi].y,
+              color: weight > 0 ? '#00aa00' : '#cc0000',
+              opacity: Math.abs(norm) * 0.6,
+              width: Math.abs(norm) * 2 + 0.5
+            })
+          }
+        })
       })
-    })
+    }
 
     // Node data
     const nodes = [
@@ -93,7 +145,15 @@ function NetworkVisualization({ weights, activations }) {
       }))
     ]
 
-    return { connections, nodes, inputPos, hiddenPos, outputPos, hiddenNodes }
+    console.log('[NetworkVisualization] Visualization computed:', {
+      connectionCount: connections.length,
+      nodeCount: nodes.length,
+      inputNodes: inputPos.length,
+      hiddenNodes: hiddenPos.length,
+      outputNodes: outputPos.length
+    })
+
+    return { connections, nodes, inputPos, hiddenPos, outputPos, hiddenNodes: actualHiddenNodes }
   }, [weights, activations])
 
   if (!visualization) {

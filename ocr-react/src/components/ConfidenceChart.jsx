@@ -8,8 +8,20 @@ const MAX_BAR_WIDTH = 250
 const START_X = 50
 const START_Y = 10
 
+console.log('[ConfidenceChart] Module loaded with config:', { WIDTH, HEIGHT, MAX_BAR_WIDTH })
+
 function ConfidenceChart({ activations, prediction }) {
+  console.log('[ConfidenceChart] Rendering with:', {
+    hasActivations: !!activations,
+    activationsLength: activations?.length,
+    activationsType: typeof activations,
+    isArray: Array.isArray(activations),
+    prediction,
+    activationValues: activations?.map((v, i) => ({ digit: i, confidence: v?.toFixed(4) }))
+  })
+
   if (!activations || activations.length !== 10) {
+    console.log('[ConfidenceChart] No valid activations, showing placeholder')
     return (
       <svg width={WIDTH} height={HEIGHT} className="confidence-chart">
         <text x={WIDTH / 2} y={HEIGHT / 2} textAnchor="middle" fill="#999">
@@ -18,6 +30,8 @@ function ConfidenceChart({ activations, prediction }) {
       </svg>
     )
   }
+
+  console.log('[ConfidenceChart] Drawing bars for', activations.length, 'digits')
 
   return (
     <svg width={WIDTH} height={HEIGHT} className="confidence-chart">

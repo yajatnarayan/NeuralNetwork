@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
 import { getArchitecture, evaluateMnist } from '../api/client'
 
+console.log('[MetricsPanel] Module loaded')
+
 function MetricsPanel() {
+  console.log('[MetricsPanel] Component rendering')
+
   const [architecture, setArchitecture] = useState(null)
   const [mnistResult, setMnistResult] = useState(null)
   const [isEvaluating, setIsEvaluating] = useState(false)
@@ -9,32 +13,53 @@ function MetricsPanel() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    console.log('[MetricsPanel] useEffect - loading architecture on mount')
     loadArchitecture()
   }, [])
 
   const loadArchitecture = async () => {
+    console.log('[MetricsPanel] loadArchitecture() called')
     try {
       const data = await getArchitecture()
+      console.log('[MetricsPanel] Architecture loaded:', {
+        hasArchitecture: !!data.architecture,
+        rawData: data
+      })
       setArchitecture(data.architecture)
     } catch (err) {
       setError('Failed to load architecture')
       console.error('[MetricsPanel] Error loading architecture:', err)
+      console.error('[MetricsPanel] Error details:', {
+        message: err.message,
+        stack: err.stack
+      })
     }
   }
 
   const handleEvaluateMnist = async () => {
+    console.log('[MetricsPanel] handleEvaluateMnist() called with sampleSize:', sampleSize)
     setIsEvaluating(true)
     setError(null)
 
     try {
       const data = await evaluateMnist(sampleSize)
+      console.log('[MetricsPanel] MNIST evaluation complete:', {
+        accuracy: data.result?.accuracy_percent,
+        correct: data.result?.correct,
+        hasArchitecture: !!data.architecture
+      })
       setMnistResult(data.result)
       setArchitecture(data.architecture)
     } catch (err) {
       setError('MNIST evaluation failed')
       console.error('[MetricsPanel] Error evaluating MNIST:', err)
+      console.error('[MetricsPanel] Error details:', {
+        message: err.message,
+        stack: err.stack
+      })
     } finally {
       setIsEvaluating(false)
+      console.log('[MetricsPanel] Evaluation finished, isEvaluating set to false')
     }
   }
 

@@ -7,7 +7,11 @@ import MetricsPanel from './components/MetricsPanel'
 import { trainNetwork, testNetwork, getWeights } from './api/client'
 import './App.css'
 
+console.log('[App] Module loaded - OCR Neural Network Demo initializing')
+
 function App() {
+  console.log('[App] App component rendering')
+
   const [inputVector, setInputVector] = useState(null)
   const [prediction, setPrediction] = useState(null)
   const [activations, setActivations] = useState(null)
@@ -16,24 +20,50 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  console.log('[App] Current state:', {
+    hasInputVector: !!inputVector,
+    prediction,
+    hasActivations: !!activations,
+    hasWeights: !!weights,
+    digit,
+    isLoading,
+    error
+  })
+
   // Load weights on mount
   useEffect(() => {
+    console.log('[App] useEffect - component mounted, loading weights')
     loadWeights()
   }, [])
 
   const loadWeights = async () => {
+    console.log('[App] loadWeights() called')
     try {
       const data = await getWeights()
+      console.log('[App] Weights loaded successfully:', {
+        hiddenNodes: data.hiddenNodes,
+        theta1Shape: data.theta1 ? `[${data.theta1.length}x${data.theta1[0]?.length}]` : 'missing',
+        theta2Shape: data.theta2 ? `[${data.theta2.length}x${data.theta2[0]?.length}]` : 'missing'
+      })
       setWeights(data)
-      console.log('[APP] Weights loaded:', data.hiddenNodes, 'hidden nodes')
     } catch (err) {
+      console.error('[App] loadWeights FAILED:', err.message)
+      console.error('[App] Full error:', err)
       setError('Failed to load network weights')
-      console.error('[APP] Error loading weights:', err)
     }
   }
 
   const handleTrain = async (drawnData) => {
+    console.log('[App] handleTrain() called')
+    console.log('[App] Training input:', {
+      digit,
+      drawnDataLength: drawnData?.length,
+      nonZeroPixels: drawnData?.filter(v => v > 0).length,
+      allZeros: drawnData?.every(v => v === 0)
+    })
+
     if (!digit || drawnData.every(v => v === 0)) {
+      console.warn('[App] Training aborted: missing digit or empty drawing')
       alert('Please draw a digit and enter its value (0-9)')
       return
     }
@@ -42,27 +72,43 @@ function App() {
     setError(null)
 
     try {
+      console.log('[App] Calling trainNetwork API...')
       const response = await trainNetwork([{
         y0: drawnData,
         label: parseInt(digit)
       }])
 
+      console.log('[App] Training response:', {
+        hasWeights: !!response.weights,
+        responseKeys: Object.keys(response)
+      })
+
       if (response.weights) {
         setWeights(response.weights)
-        console.log('[APP] Training complete, weights updated')
+        console.log('[App] Training complete, weights updated')
       }
 
       setDigit('') // Clear input after training
     } catch (err) {
+      console.error('[App] Training FAILED:', err.message)
+      console.error('[App] Full error:', err)
       setError('Training failed')
-      console.error('[APP] Training error:', err)
     } finally {
       setIsLoading(false)
+      console.log('[App] Training process finished')
     }
   }
 
   const handleTest = async (drawnData) => {
+    console.log('[App] handleTest() called')
+    console.log('[App] Test input:', {
+      drawnDataLength: drawnData?.length,
+      nonZeroPixels: drawnData?.filter(v => v > 0).length,
+      allZeros: drawnData?.every(v => v === 0)
+    })
+
     if (drawnData.every(v => v === 0)) {
+      console.warn('[App] Test aborted: empty drawing')
       alert('Please draw a digit to test')
       return
     }
@@ -71,19 +117,31 @@ function App() {
     setError(null)
 
     try {
+      console.log('[App] Calling testNetwork API...')
       const response = await testNetwork(drawnData)
+
+      console.log('[App] Test response:', {
+        result: response.result,
+        hasActivations: !!response.activations,
+        activationKeys: response.activations ? Object.keys(response.activations) : [],
+        inputLength: response.activations?.input?.length,
+        hiddenLength: response.activations?.hidden?.length,
+        outputLength: response.activations?.output?.length
+      })
 
       setInputVector(response.activations.input)
       setActivations(response.activations)
       setPrediction(response.result)
 
-      console.log('[APP] Prediction:', response.result)
+      console.log('[App] Prediction:', response.result)
       alert(`Neural network predicts: ${response.result}`)
     } catch (err) {
+      console.error('[App] Test FAILED:', err.message)
+      console.error('[App] Full error:', err)
       setError('Prediction failed')
-      console.error('[APP] Prediction error:', err)
     } finally {
       setIsLoading(false)
+      console.log('[App] Test process finished')
     }
   }
 
